@@ -126,7 +126,7 @@
         }, 2000);
 
         setInterval(() => {
-            const isRunning = localStorage.getItem('sulane_running'] === 'true';
+            const isRunning = localStorage.getItem('sulane_running') === 'true';
             const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
             if (!isRunning || primarySkill !== 'kaevandus') return;
 
