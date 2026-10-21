@@ -18,7 +18,32 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const koht = urlParams.get('koht'); // prygikast, seif, kirst, hpseif, hpkirst
 
-                // Otsime sobivat nuppu tekstijärgi, kuna ID on kõigil sama (#roovikoht)
+                // 1. Kontrollime lehelt, kas keegi teine on juba röövinud (element #kohttaeg)
+                const kohtAegEl = document.getElementById('kohttaeg');
+                const pageText = document.body.innerText.toLowerCase();
+                let waitSeconds = 180; // Vaikimisi cooldown
+
+                const timeMatch = (kohtAegEl ? kohtAegEl.innerText : pageText).match(/(\d+)\s*sekundi pärast/i);
+                if (timeMatch) {
+                    waitSeconds = parseInt(timeMatch[1], 10) + 3; // Lisame 3 sekundi puhveraja
+                    log(`⏳ Kohal "${koht}" on juba rööv pooleli! Ootame ${waitSeconds} sekundit...`, true);
+                    
+                    if (koht) {
+                        const expiryTime = Date.now() + waitSeconds * 1000;
+                        localStorage.setItem(`sulane_roov_${koht}_expiry`, expiryTime);
+                    }
+
+                    // Suuname kohe tagasi põhiskilli juurde
+                    setTimeout(() => {
+                        const activeSkill = localStorage.getItem('sulane_primary_skill') || 'mets';
+                        if (typeof window.sulaneReturnToLocation === 'function') {
+                            window.sulaneReturnToLocation(activeSkill);
+                        }
+                    }, 500);
+                    return;
+                }
+
+                // 2. Kui leht on vaba, otsime nuppu ja sooritame röövi
                 const buttons = Array.from(document.querySelectorAll('button, input[type="submit"], input[type="button"]'));
                 let targetBtn = null;
 
@@ -31,7 +56,6 @@
                     if (koht === 'hpkirst' && txt.includes('härjapõlvlase kirstust')) { targetBtn = btn; break; }
                 }
 
-                // Fallback: kui spetsiifilist ei leidnud, võta esimene vaba röövimise nupp
                 if (!targetBtn) {
                     targetBtn = document.getElementById('roovikoht') || buttons.find(el => (el.textContent || '').toLowerCase().includes('varasta'));
                 }
@@ -40,32 +64,20 @@
                     log(`🎯 Leitud röövimise nupp kohas "${koht}". Sooritan tegevuse...`);
                     targetBtn.click();
 
-                    // Seadistame 180 sekundi cooldowni localStorage'isse
                     if (koht) {
                         const expiryTime = Date.now() + 180 * 1000;
                         localStorage.setItem(`sulane_roov_${koht}_expiry`, expiryTime);
                     }
 
-                    // Tagasipöördumine: kasutame põhiskripti globaalset tagasisuunamise funktsiooni
                     setTimeout(() => {
                         const activeSkill = localStorage.getItem('sulane_primary_skill') || 'mets';
                         if (typeof window.sulaneReturnToLocation === 'function') {
                             window.sulaneReturnToLocation(activeSkill);
-                        } else {
-                            // Fallback, kui globaalset funktsiooni pole
-                            if (activeSkill === 'kaevandus') {
-                                window.location.href = 'https://www.sulane.net/avaleht.php?asukoht=10xkaevandus';
-                            } else if (activeSkill === 'sulatamine') {
-                                window.location.href = 'https://www.sulane.net/avaleht.php?asukoht=sulatamine';
-                            } else {
-                                window.location.href = 'https://www.sulane.net/avaleht.php?asukoht=10xmets&metstype=mets';
-                            }
                         }
                     }, 1500);
 
                 } else {
                     log(`⚠️ Röövimise nuppu ei leitud lehelt (koht: ${koht}).`, true);
-                    // Püüame ikka tagasi liikuda, et bot ei jääks kinni
                     setTimeout(() => {
                         const activeSkill = localStorage.getItem('sulane_primary_skill') || 'mets';
                         if (typeof window.sulaneReturnToLocation === 'function') {
