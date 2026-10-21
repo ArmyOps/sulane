@@ -7,7 +7,7 @@
         }
     }
 
-    let isProcessing = false;
+    let isProcessing = false; 
 
     // Funktsioon riidekappi suunamiseks ja vajaliku tööriista märkimiseks
     function redirectToWardrobe() {
