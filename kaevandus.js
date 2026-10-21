@@ -19,27 +19,21 @@
         const currentUrl = window.location.href;
         if (!currentUrl.includes('asukoht=10xkaevandus')) return;
 
-        // 1. TÄPNE AUTOKLIKKERI MÄRKERUUDU SISSALÜLITAMINE
-        const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
-        const autoClickCb = checkboxes.find(cb => {
-            const parentText = (cb.parentElement?.textContent || '').toLowerCase();
-            const labelText = (cb.nextSibling?.textContent || cb.previousSibling?.textContent || '').toLowerCase();
-            return parentText.includes('autoklikker') || labelText.includes('autoklikker') || parentText.includes('autoklikk');
-        });
-
+        // 1. AUTOKLIKKERI LINNUKESE LÜLITAMINE (ID: autoClickerCheckBox)
+        const autoClickCb = document.getElementById('autoClickerCheckBox');
         if (autoClickCb && !autoClickCb.checked) {
             autoClickCb.click();
             log('✅ Lülitasin Autoklikkeri märkeruudu sisse!');
         }
 
-        // 2. MAAVARA RESSURSI OTSIMINE JA VAJUTAMINE
-        const buttons = document.querySelectorAll('button.maavaranupp, input.maavaranupp, [maavara]');
+        // 2. MAAVARADE OTSIMINE LEHELT
+        const buttons = document.querySelectorAll('button.maavaranupp');
         let targetRuut = null;
 
         if (buttons && buttons.length > 0) {
             for (const btn of buttons) {
-                const oreName = btn.getAttribute('data-maavara') || btn.getAttribute('maavara') || btn.textContent.trim();
-                const ruutNr = btn.getAttribute('data-ruutnr') || btn.getAttribute('ruutnr');
+                const oreName = btn.getAttribute('maavara');
+                const ruutNr = btn.getAttribute('ruutnr');
 
                 if (oreName && oreName.toLowerCase().includes(targetOre.toLowerCase())) {
                     targetRuut = ruutNr;
@@ -48,10 +42,10 @@
             }
         }
 
-        // Kui leidsime kaardilt soovitud ressursi
+        // Kui kaardilt leiti otsitav ressurss
         if (targetRuut !== null) {
             isProcessing = true;
-            log(`🎯 Leitud ressurss (${targetOre}) ruudul ${targetRuut}! Korjan...`);
+            log(`🎯 Leitud ${targetOre} ruudul ${targetRuut}! Saadan korjamise päringu...`);
 
             try {
                 const res1 = await fetch(`/10xpickupmaavara.php?ruutnr=${targetRuut}&kaarttyyp=tavakaart`);
@@ -62,7 +56,7 @@
 
             await new Promise(r => setTimeout(r, 400));
 
-            // Pärast korjamist vajutame kindluse mõttes "Otsi" või värskendame kaarti
+            // Vajutame "Otsi" nuppu uue kaardi laadimiseks
             clickOtsiButton();
 
             setTimeout(() => {
@@ -70,10 +64,10 @@
             }, 1800);
 
         } else {
-            // Kui kaardil pole soovitud maavara, klikime "Otsi" nuppu!
-            log(`Soovitud ressurssi (${targetOre}) kaardil pole. Klikin "Otsi" nuppu...`);
+            // Kui kaardil pole soovitud maavara, klõpsame "Otsi" nuppu (ID: otsimv)
+            log(`Soovitud ressurssi (${targetOre}) kaardil pole. Klõpsan "Otsi" nuppu...`);
             isProcessing = true;
-            
+
             clickOtsiButton();
 
             setTimeout(() => {
@@ -82,22 +76,15 @@
         }
     }
 
-    // TÄPNE "OTSI" NUPU LEIDMINE JA KLIKKIMINE
+    // TÄPNE "OTSI" NUPU (ID: otsimv) VAJUTAMINE
     function clickOtsiButton() {
-        const allButtons = Array.from(document.querySelectorAll('button, input[type="submit"], input[type="button"]'));
-        
-        // Otsime nuppu, mille tekst või väärtus on täpselt "Otsi"
-        const otsiBtn = allButtons.find(el => {
-            const txt = (el.value || el.textContent || '').trim().toLowerCase();
-            return txt === 'otsi';
-        });
+        const otsiBtn = document.getElementById('otsimv');
 
         if (otsiBtn) {
-            log('🔍 Klikkisin nuppu "Otsi"!');
+            log('🔍 Klõpsasin nuppu "Otsi" (id="otsimv")!');
             otsiBtn.click();
         } else {
-            log('⚠️ Nuppu "Otsi" ei leitud lehelt!', true);
-            // Tagavaralahendus: kui nuppu ei leita, teeme fetch refreshi
+            log('⚠️ Nuppu "otsimv" ei leitud lehelt!', true);
             if (typeof window.jalusrefresh === 'function') {
                 window.jalusrefresh();
             }
@@ -106,8 +93,8 @@
 
     const currentUrl = window.location.href;
     if (currentUrl.includes('asukoht=10xkaevandus')) {
-        log('Kaevanduse skript laetud (Uuendatud "Otsi" nupu ja "Autoklikker" tuvastus).');
-        
+        log('Kaevanduse skript laetud (Täpsed elementide ID-d seadistatud).');
+
         setInterval(() => {
             runMiningAutomation();
         }, 2000);
