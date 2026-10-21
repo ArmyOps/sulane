@@ -14,14 +14,14 @@
         const currentUrl = window.location.href;
         if (currentUrl.includes('asukoht=riided')) return;
         
-        // Anname põhiskriptile teada, et kaevanduse jaoks on vaja kirkat
         localStorage.setItem('sulane_missing_tool', 'kirka');
         log('⚠️ Kirka sai otsa! Suundume Riidekappi uut võtma...', true);
         window.location.href = 'https://www.sulane.net/avaleht.php?asukoht=riided';
     }
 
     async function runMiningAutomation() {
-        const isRunning = localStorage.getItem('sulane_running'] === 'true';
+        // Parandatud: muudetud kandiline sulg ümmarguseks
+        const isRunning = localStorage.getItem('sulane_running') === 'true';
         const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
         const targetOre = localStorage.getItem('sulane_selected_ore') || 'Plaatina';
 
@@ -126,7 +126,7 @@
         }, 2000);
 
         setInterval(() => {
-            const isRunning = localStorage.getItem('sulane_running'] === 'true';
+            const isRunning = localStorage.getItem('sulane_running') === 'true';
             const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
             if (!isRunning || primarySkill !== 'kaevandus') return;
 
