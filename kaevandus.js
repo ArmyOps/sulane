@@ -4,13 +4,15 @@
     function log(msg, isError = false) {
         if (typeof window.sulaneLogMessage === 'function') {
             window.sulaneLogMessage(`[Kaevandamine] ${msg}`, isError);
+        } else {
+            console.log(`[Kaevandamine] ${msg}`);
         }
     }
 
     let isProcessing = false;
 
-    async function runMiningAutomation() {
-        const isRunning = localStorage.getItem('sulane_running'] === 'true';
+    function runMiningAutomation() {
+        const isRunning = localStorage.getItem('sulane_running') === 'true';
         const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
         const targetOre = localStorage.getItem('sulane_selected_ore') || 'Plaatina';
 
@@ -19,26 +21,33 @@
         const currentUrl = window.location.href;
         if (!currentUrl.includes('asukoht=10xkaevandus')) return;
 
-        // 1. AUTOKLIKKERI LINNUKESE KONTROLL JA SISSALÜLITAMINE
+        // 1. OOTAME JA KONTROLLIME AUTOKLIKKERIT
         const autoClickCb = document.getElementById('autoClickerCheckBox');
-        if (autoClickCb && !autoClickCb.checked) {
-            autoClickCb.click();
-            log('✅ Lülitasin Autoklikkeri märkeruudu sisse!');
+        if (autoClickCb) {
+            if (!autoClickCb.checked) {
+                autoClickCb.click();
+                log('✅ Autoklikkeri märkeruut leitud ja lülitati sisse!');
+            }
+        } else {
+            // Elementi pole veel laetud, ootame järgmise tsüklini
+            return;
         }
 
-        // 2. MAAVARADE OTSIMINE KAARDILT
+        // 2. OTSIME MAAVARASID KAARDILT
         const buttons = document.querySelectorAll('button.maavaranupp');
+        if (!buttons || buttons.length === 0) {
+            // Kaarti pole veel laetud, proovime otsida uut kaarti
+            return;
+        }
+
         let targetRuut = null;
+        for (const btn of buttons) {
+            const oreName = btn.getAttribute('maavara');
+            const ruutNr = btn.getAttribute('ruutnr');
 
-        if (buttons && buttons.length > 0) {
-            for (const btn of buttons) {
-                const oreName = btn.getAttribute('maavara');
-                const ruutNr = btn.getAttribute('ruutnr');
-
-                if (oreName && oreName.toLowerCase().includes(targetOre.toLowerCase())) {
-                    targetRuut = ruutNr;
-                    break;
-                }
+            if (oreName && oreName.toLowerCase().includes(targetOre.toLowerCase())) {
+                targetRuut = ruutNr;
+                break;
             }
         }
 
@@ -47,25 +56,25 @@
             isProcessing = true;
             log(`🎯 Leitud ${targetOre} ruudul ${targetRuut}! Korjan...`);
 
-            try {
-                // Kasutame mängu oma õiget kaardi tüüpi (tava)
-                const res1 = await fetch(`/10xpickupmaavara.php?ruutnr=${targetRuut}&kaarttyyp=tavakaart`);
-                log(`-> Pickup vastuse kood: ${res1.status}`);
-            } catch (e) {
-                log(`-> Pickup viga: ${e.message}`, true);
-            }
-
-            await new Promise(r => setTimeout(r, 400));
-
-            // Uuendame kaarti mängu sisemise AJAX päringuga
-            triggerOtsiKaart();
-
-            setTimeout(() => {
-                isProcessing = false;
-            }, 1500);
+            $.ajax({
+                url: `/10xpickupmaavara.php?ruutnr=${targetRuut}&kaarttyyp=tavakaart`,
+                method: 'GET',
+                success: function (msg) {
+                    log('-> Pickup edukas, uuendan kaarti...');
+                    triggerOtsiKaart();
+                },
+                error: function (err) {
+                    log('-> Pickup viga, proovin uuesti...', true);
+                },
+                complete: function() {
+                    setTimeout(() => {
+                        isProcessing = false;
+                    }, 1500);
+                }
+            });
 
         } else {
-            // Kui maavara pole, teeme uue kaardi otsingu AJAX päringu (nagu mäng ise teeb)
+            // Kui soovitud ressurssi polnud, otsime uut kaarti
             log(`Soovitud ressurssi (${targetOre}) kaardil pole. Otsin uut kaarti...`);
             isProcessing = true;
 
@@ -77,42 +86,45 @@
         }
     }
 
-    // MÄNGU OMA AJAX OTSINGU KUTSUMINE (10xkaevanduskaartotsi852.php)
-    async function triggerOtsiKaart() {
-        try {
-            log('🔍 Saadan uue kaardi otsingu päringu...');
-            const res = await $.ajax({
-                data: 'type=tava',
-                url: '10xkaevanduskaartotsi852.php',
-                method: 'GET'
-            });
-
-            // Värskendame kaardi sisu
-            const mapRes = await $.ajax({
-                data: 'type=tava',
-                url: '10xkaevanduskaart852.php',
-                method: 'GET'
-            });
-
-            const kaartSisu = document.getElementById('kaartsisu');
-            if (kaartSisu) {
-                kaartSisu.innerHTML = mapRes;
-                log('✅ Kaart edukalt uuendatud!');
+    // KAARDI VÄRSKENDAMINE MÄGUS SISEMISE AJAX KUTSUGA
+    function triggerOtsiKaart() {
+        $.ajax({
+            data: 'type=tava',
+            url: '10xkaevanduskaartotsi852.php',
+            method: 'GET',
+            success: function () {
+                $.ajax({
+                    data: 'type=tava',
+                    url: '10xkaevanduskaart852.php',
+                    method: 'GET',
+                    success: function (mapRes) {
+                        const kaartSisu = document.getElementById('kaartsisu');
+                        if (kaartSisu) {
+                            kaartSisu.innerHTML = mapRes;
+                            log('✅ Kaart uuendatud uute ruutudega!');
+                        }
+                    }
+                });
+            },
+            error: function() {
+                // Tagavaralahendus: kui AJAX ei toimi, klikime otse nupule
+                const otsiBtn = document.getElementById('otsimv');
+                if (otsiBtn) {
+                    otsiBtn.click();
+                    log('🔍 Klikitud otsi nupule tagavarameetodiga.');
+                }
             }
-        } catch (e) {
-            log(`Kaardi otsingu viga: ${e.message}`, true);
-            // Tagavaralahendus: kui AJAX ebaõnnestub, klõpsame nuppu otse
-            const otsiBtn = document.getElementById('otsimv');
-            if (otsiBtn) otsiBtn.click();
-        }
+        });
     }
 
+    // Käivitame kontrolli kohe, kui leht on avatud, ja hoiame seda töös intervalliga
     const currentUrl = window.location.href;
     if (currentUrl.includes('asukoht=10xkaevandus')) {
-        log('Kaevanduse skript initsialiseeritud (Täpne lähtekoodi tugi).');
+        log('Kaevanduse skript initsialiseeritud (Ootab elementide laadimist).');
 
+        // Kontrollime iga 1,5 sekundi järel ega elemendid pole tekkinud ja kas saab kaevata
         setInterval(() => {
             runMiningAutomation();
-        }, 2000);
+        }, 1500);
     }
 })();
