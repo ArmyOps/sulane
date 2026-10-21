@@ -9,13 +9,15 @@
 
     let isProcessing = false;
 
-    // Funktsioon riidekappi suunamiseks ja vajaliku tööriista märkimiseks
+    // Funktsioon riidekappi suunamiseks (määrab koha ja vajaliku tööriista täpselt)
     function redirectToWardrobe() {
         const currentUrl = window.location.href;
         if (currentUrl.includes('asukoht=riided')) return;
         
         localStorage.setItem('sulane_missing_tool', 'kirka');
-        log('⚠️ Kirka sai otsa! Suundume Riidekappi uut võtma...', true);
+        localStorage.setItem('sulane_last_location', 'kaevandus');
+        
+        log('⚠️ Kirka puudub/otsas! Suundume Riidekappi...', true);
         window.location.href = 'https://www.sulane.net/avaleht.php?asukoht=riided';
     }
 
@@ -47,7 +49,7 @@
 
     async function runMiningAutomation() {
         const isRunning = localStorage.getItem('sulane_running') === 'true';
-        const primarySkill = localStorage.getItem('sulane_primary_skill') || 'kaevandus';
+        const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
         const targetOre = localStorage.getItem('sulane_selected_ore') || 'Plaatina';
 
         if (!isRunning || primarySkill !== 'kaevandus') return;
@@ -116,21 +118,6 @@
 
     const currentUrl = window.location.href;
 
-    // --- RIIDEKAPI TURVAKONTROLL KAESOLEVA SKRIPTIOLEKU JAOKS ---
-    if (currentUrl.includes('asukoht=riided')) {
-        setTimeout(() => {
-            const missingTool = localStorage.getItem('sulane_missing_tool');
-            if (missingTool === 'kirka') {
-                const pageText = document.body.innerText.toLowerCase();
-                // Kui lehel on teade, et võtsid kasutusele või kirka on kasutusel, suuname otse kaevandusse
-                if (pageText.includes('võtsid kasutusele') || pageText.includes('kasutusel')) {
-                    localStorage.removeItem('sulane_missing_tool');
-                    window.location.href = 'https://www.sulane.net/avaleht.php?asukoht=10xkaevandus';
-                }
-            }
-        }, 2000);
-    }
-
     if (currentUrl.includes('asukoht=10xkaevandus')) {
         log('Kaevanduse skript initsialiseeritud.');
 
@@ -139,8 +126,8 @@
         }, 2000);
 
         setInterval(() => {
-            const isRunning = localStorage.getItem('sulane_running'] === 'true';
-            const primarySkill = localStorage.getItem('sulane_primary_skill') || 'kaevandus';
+            const isRunning = localStorage.getItem('sulane_running') === 'true';
+            const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
             if (!isRunning || primarySkill !== 'kaevandus') return;
 
             const pageText = document.body.innerText.toLowerCase();
