@@ -10,7 +10,7 @@
     let isProcessing = false;
 
     async function runMiningAutomation() {
-        const isRunning = localStorage.getItem('sulane_running') === 'true';
+        const isRunning = localStorage.getItem('sulane_running'] === 'true';
         const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
         const targetOre = localStorage.getItem('sulane_selected_ore') || 'Plaatina';
 
@@ -19,14 +19,14 @@
         const currentUrl = window.location.href;
         if (!currentUrl.includes('asukoht=10xkaevandus')) return;
 
-        // 1. AUTOKLIKKERI LINNUKESE LÜLITAMINE (ID: autoClickerCheckBox)
+        // 1. AUTOKLIKKERI LINNUKESE KONTROLL JA SISSALÜLITAMINE
         const autoClickCb = document.getElementById('autoClickerCheckBox');
         if (autoClickCb && !autoClickCb.checked) {
             autoClickCb.click();
             log('✅ Lülitasin Autoklikkeri märkeruudu sisse!');
         }
 
-        // 2. MAAVARADE OTSIMINE LEHELT
+        // 2. MAAVARADE OTSIMINE KAARDILT
         const buttons = document.querySelectorAll('button.maavaranupp');
         let targetRuut = null;
 
@@ -42,12 +42,13 @@
             }
         }
 
-        // Kui kaardilt leiti otsitav ressurss
+        // Kui leidsime soovitud ressursi
         if (targetRuut !== null) {
             isProcessing = true;
-            log(`🎯 Leitud ${targetOre} ruudul ${targetRuut}! Saadan korjamise päringu...`);
+            log(`🎯 Leitud ${targetOre} ruudul ${targetRuut}! Korjan...`);
 
             try {
+                // Kasutame mängu oma õiget kaardi tüüpi (tava)
                 const res1 = await fetch(`/10xpickupmaavara.php?ruutnr=${targetRuut}&kaarttyyp=tavakaart`);
                 log(`-> Pickup vastuse kood: ${res1.status}`);
             } catch (e) {
@@ -56,19 +57,19 @@
 
             await new Promise(r => setTimeout(r, 400));
 
-            // Vajutame "Otsi" nuppu uue kaardi laadimiseks
-            clickOtsiButton();
+            // Uuendame kaarti mängu sisemise AJAX päringuga
+            triggerOtsiKaart();
 
             setTimeout(() => {
                 isProcessing = false;
-            }, 1800);
+            }, 1500);
 
         } else {
-            // Kui kaardil pole soovitud maavara, klõpsame "Otsi" nuppu (ID: otsimv)
-            log(`Soovitud ressurssi (${targetOre}) kaardil pole. Klõpsan "Otsi" nuppu...`);
+            // Kui maavara pole, teeme uue kaardi otsingu AJAX päringu (nagu mäng ise teeb)
+            log(`Soovitud ressurssi (${targetOre}) kaardil pole. Otsin uut kaarti...`);
             isProcessing = true;
 
-            clickOtsiButton();
+            triggerOtsiKaart();
 
             setTimeout(() => {
                 isProcessing = false;
@@ -76,24 +77,39 @@
         }
     }
 
-    // TÄPNE "OTSI" NUPU (ID: otsimv) VAJUTAMINE
-    function clickOtsiButton() {
-        const otsiBtn = document.getElementById('otsimv');
+    // MÄNGU OMA AJAX OTSINGU KUTSUMINE (10xkaevanduskaartotsi852.php)
+    async function triggerOtsiKaart() {
+        try {
+            log('🔍 Saadan uue kaardi otsingu päringu...');
+            const res = await $.ajax({
+                data: 'type=tava',
+                url: '10xkaevanduskaartotsi852.php',
+                method: 'GET'
+            });
 
-        if (otsiBtn) {
-            log('🔍 Klõpsasin nuppu "Otsi" (id="otsimv")!');
-            otsiBtn.click();
-        } else {
-            log('⚠️ Nuppu "otsimv" ei leitud lehelt!', true);
-            if (typeof window.jalusrefresh === 'function') {
-                window.jalusrefresh();
+            // Värskendame kaardi sisu
+            const mapRes = await $.ajax({
+                data: 'type=tava',
+                url: '10xkaevanduskaart852.php',
+                method: 'GET'
+            });
+
+            const kaartSisu = document.getElementById('kaartsisu');
+            if (kaartSisu) {
+                kaartSisu.innerHTML = mapRes;
+                log('✅ Kaart edukalt uuendatud!');
             }
+        } catch (e) {
+            log(`Kaardi otsingu viga: ${e.message}`, true);
+            // Tagavaralahendus: kui AJAX ebaõnnestub, klõpsame nuppu otse
+            const otsiBtn = document.getElementById('otsimv');
+            if (otsiBtn) otsiBtn.click();
         }
     }
 
     const currentUrl = window.location.href;
     if (currentUrl.includes('asukoht=10xkaevandus')) {
-        log('Kaevanduse skript laetud (Täpsed elementide ID-d seadistatud).');
+        log('Kaevanduse skript initsialiseeritud (Täpne lähtekoodi tugi).');
 
         setInterval(() => {
             runMiningAutomation();
