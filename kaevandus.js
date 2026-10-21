@@ -3,7 +3,7 @@
 
     function log(msg, isError = false) {
         if (typeof window.sulaneLogMessage === 'function') {
-            window.sulaneLogMessage(`[Kaevandus] ${msg}`, isError);
+            window.sulaneLogMessage(`[Kaevandamine] ${msg}`, isError);
         }
     }
 
@@ -12,10 +12,10 @@
         const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
         const targetOre = localStorage.getItem('sulane_selected_ore') || 'Plaatina';
 
-        if (!isRunning || primarySkill !== 'kaevandus') return;
+        if (!isRunning || (primarySkill !== 'kaevandamine' && primarySkill !== 'kaevandus')) return;
 
         const currentUrl = window.location.href;
-        if (!currentUrl.includes('asukoht=kaevandus')) return;
+        if (!currentUrl.includes('asukoht=kaevandamine')) return;
 
         log(`Otsin kaardilt ressurssi: ${targetOre}...`);
 
@@ -62,18 +62,17 @@
             }
 
         } else {
-            log(`Kaardilt ei leitud ühtegi ${targetOre} nuppu! Ootame hetke...`);
+            log(`Kaardilt ei leitud ühtegi ${targetOre} nuppu! Ootame...`);
         }
     }
 
-    // Käivitame automaatse tsükli, kui asume kaevanduses ja bot on aktiivne
     window.addEventListener('load', () => {
         const currentUrl = window.location.href;
-        if (currentUrl.includes('asukoht=kaevandus')) {
+        if (currentUrl.includes('asukoht=kaevandamine')) {
             log('Kaevanduse skript initsialiseeritud (Automaatrežiim).');
             setInterval(() => {
                 runMiningAutomation();
-            }, 2000); // Kontrollib ja kaevab iga 2 sekundi järel
+            }, 2000);
         }
     });
 })();
