@@ -12,10 +12,10 @@
         const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
         const targetOre = localStorage.getItem('sulane_selected_ore') || 'Plaatina';
 
-        if (!isRunning || (primarySkill !== 'kaevandamine' && primarySkill !== 'kaevandus')) return;
+        if (!isRunning || primarySkill !== 'kaevandus') return;
 
         const currentUrl = window.location.href;
-        if (!currentUrl.includes('asukoht=kaevandamine')) return;
+        if (!currentUrl.includes('asukoht=10xkaevandus')) return;
 
         log(`Otsin kaardilt ressurssi: ${targetOre}...`);
 
@@ -68,7 +68,7 @@
 
     window.addEventListener('load', () => {
         const currentUrl = window.location.href;
-        if (currentUrl.includes('asukoht=kaevandamine')) {
+        if (currentUrl.includes('asukoht=10xkaevandus')) {
             log('Kaevanduse skript initsialiseeritud (Automaatrežiim).');
             setInterval(() => {
                 runMiningAutomation();
