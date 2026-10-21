@@ -17,20 +17,25 @@
         const currentUrl = window.location.href;
         if (!currentUrl.includes('asukoht=10xkaevandus')) return;
 
-        log(`Otsin kaardilt ressurssi: ${targetOre}...`);
-
         const buttons = document.querySelectorAll('button.maavaranupp');
+        
+        // Kui nuppe pole veel laetud, ootame järgmise tsüklini
+        if (!buttons || buttons.length === 0) {
+            return;
+        }
+
         let targetRuut = null;
 
         for (const btn of buttons) {
-            if (btn.getAttribute('maavara') === targetOre) {
+            const oreName = btn.getAttribute('maavara');
+            if (oreName && oreName.toLowerCase() === targetOre.toLowerCase()) {
                 targetRuut = btn.getAttribute('ruutnr');
                 break;
             }
         }
 
         if (targetRuut !== null) {
-            log(`Leitud! Saadan korjamise päringu ruudule ${targetRuut}...`);
+            log(`Leitud ressurss (${targetOre}) ruudul ${targetRuut}! Saadan korjamise päringu...`);
 
             try {
                 const res1 = await fetch(`/10xpickupmaavara.php?ruutnr=${targetRuut}&kaarttyyp=tavakaart`);
@@ -39,7 +44,8 @@
                 log(`-> Pickup viga: ${e.message}`, true);
             }
 
-            await new Promise(r => setTimeout(r, 300));
+            // Väike viivitus enne kaardi uuendamist
+            await new Promise(r => setTimeout(r, 400));
 
             log(`Saadan kaardi värskenduse (jalusrefreshnew.php)...`);
 
@@ -51,7 +57,7 @@
                     }
                 });
                 const htmlText = await res2.text();
-                log(`-> Refresh kood: ${res2.status} (pikkus: ${htmlText.length} baiti)`);
+                log(`-> Refresh kood: ${res2.status}`);
 
                 if (typeof window.jalusrefresh === 'function') {
                     window.jalusrefresh();
@@ -62,17 +68,19 @@
             }
 
         } else {
-            log(`Kaardilt ei leitud ühtegi ${targetOre} nuppu! Ootame...`);
+            // Logime harvemini, et mitte debug logi üle koormata, kui ressurssi pole kohe saadaval
+            log(`Kaardilt ei leitud hetkel soovitud ressurssi (${targetOre})! Otsin uuesti...`);
         }
     }
 
-    window.addEventListener('load', () => {
-        const currentUrl = window.location.href;
-        if (currentUrl.includes('asukoht=10xkaevandus')) {
-            log('Kaevanduse skript initsialiseeritud (Automaatrežiim).');
-            setInterval(() => {
-                runMiningAutomation();
-            }, 2000);
-        }
-    });
+    // Käivitame kaevanduse kontrolli tsükli kohe, kui skript laetakse kaevanduse lehele
+    const currentUrl = window.location.href;
+    if (currentUrl.includes('asukoht=10xkaevandus')) {
+        log('Kaevanduse skript initsialiseeritud ja alustab kaevandamist.');
+        
+        // Käivitame tsükli iga 1.5 sekundi järel
+        setInterval(() => {
+            runMiningAutomation();
+        }, 1500);
+    }
 })();
