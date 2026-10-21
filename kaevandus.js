@@ -17,25 +17,42 @@
         const currentUrl = window.location.href;
         if (!currentUrl.includes('asukoht=10xkaevandus')) return;
 
-        const buttons = document.querySelectorAll('button.maavaranupp');
+        // 1. Kontrollime ja paneme autoklikeri / linnukese peale, kui see on olemas
+        const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+        const autoClickCb = document.getElementById('autoClickChecker') ||
+            checkboxes.find(cb => cb.parentElement?.textContent?.toLowerCase().includes('autoklikk') || cb.id?.toLowerCase().includes('auto'));
+
+        if (autoClickCb && !autoClickCb.checked) {
+            autoClickCb.click();
+            log('Lülitasin kaevanduses autokliki / linnukese sisse.');
+        }
+
+        // 2. Otsime kõiki kaevanduse nuppe
+        const buttons = document.querySelectorAll('button.maavaranupp, input.maavaranupp, [maavara]');
         
-        // Kui nuppe pole veel laetud, ootame järgmise tsüklini
         if (!buttons || buttons.length === 0) {
+            log('⚠️ Hoiatus: Kaardilt ei leitud ühtegi maavara nuppu (klassiga .maavaranupp või atribuudiga maavara)!', true);
             return;
         }
 
+        let foundOres = [];
         let targetRuut = null;
 
-        for (const btn of buttons) {
-            const oreName = btn.getAttribute('maavara');
-            if (oreName && oreName.toLowerCase() === targetOre.toLowerCase()) {
-                targetRuut = btn.getAttribute('ruutnr');
-                break;
+        buttons.forEach(btn => {
+            const oreName = btn.getAttribute('data-maavara') || btn.getAttribute('maavara') || btn.textContent.trim();
+            const ruutNr = btn.getAttribute('data-ruutnr') || btn.getAttribute('ruutnr');
+            if (oreName) foundOres.push(`${oreName} (ruut: ${ruutNr || 'puudub'})`);
+
+            if (oreName && oreName.toLowerCase().includes(targetOre.toLowerCase())) {
+                targetRuut = ruutNr;
             }
-        }
+        });
+
+        // Logime korra leidudest, et näha debug aknas mis nuppudega tegemist on
+        log(`Leitud maavarad kaardil: [ ${foundOres.join(', ')} ] | Otsitav: ${targetOre}`);
 
         if (targetRuut !== null) {
-            log(`Leitud ressurss (${targetOre}) ruudul ${targetRuut}! Saadan korjamise päringu...`);
+            log(`🎯 Leitud sihtressurss (${targetOre}) ruudul ${targetRuut}! Saadan korjamise päringu...`);
 
             try {
                 const res1 = await fetch(`/10xpickupmaavara.php?ruutnr=${targetRuut}&kaarttyyp=tavakaart`);
@@ -44,7 +61,6 @@
                 log(`-> Pickup viga: ${e.message}`, true);
             }
 
-            // Väike viivitus enne kaardi uuendamist
             await new Promise(r => setTimeout(r, 400));
 
             log(`Saadan kaardi värskenduse (jalusrefreshnew.php)...`);
@@ -68,19 +84,19 @@
             }
 
         } else {
-            // Logime harvemini, et mitte debug logi üle koormata, kui ressurssi pole kohe saadaval
-            log(`Kaardilt ei leitud hetkel soovitud ressurssi (${targetOre})! Otsin uuesti...`);
+            log(`Kaardilt ei leitud täpset vastet ressursile "${targetOre}". Ootame uut tsüklit...`);
         }
     }
 
-    // Käivitame kaevanduse kontrolli tsükli kohe, kui skript laetakse kaevanduse lehele
     const currentUrl = window.location.href;
     if (currentUrl.includes('asukoht=10xkaevandus')) {
-        log('Kaevanduse skript initsialiseeritud ja alustab kaevandamist.');
+        log('Kaevanduse skript initsialiseeritud ja alustab skannimist.');
         
-        // Käivitame tsükli iga 1.5 sekundi järel
+        // Lülita debug logi automaatselt sisse, et näeksid kohe infot
+        localStorage.setItem('sulane_debug_enabled', 'true');
+
         setInterval(() => {
             runMiningAutomation();
-        }, 1500);
+        }, 2000);
     }
 })();
