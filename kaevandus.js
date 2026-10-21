@@ -47,7 +47,7 @@
 
     async function runMiningAutomation() {
         const isRunning = localStorage.getItem('sulane_running') === 'true';
-        const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
+        const primarySkill = localStorage.getItem('sulane_primary_skill') || 'kaevandus';
         const targetOre = localStorage.getItem('sulane_selected_ore') || 'Plaatina';
 
         if (!isRunning || primarySkill !== 'kaevandus') return;
@@ -140,7 +140,7 @@
 
         setInterval(() => {
             const isRunning = localStorage.getItem('sulane_running'] === 'true';
-            const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
+            const primarySkill = localStorage.getItem('sulane_primary_skill') || 'kaevandus';
             if (!isRunning || primarySkill !== 'kaevandus') return;
 
             const pageText = document.body.innerText.toLowerCase();
