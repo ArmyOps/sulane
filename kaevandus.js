@@ -87,7 +87,7 @@
 
         if (targetRuut !== null) {
             isProcessing = true;
-            log(`🎯 Leitud ${targetOre} ruudul ${targetRuut}! Korjan...`);
+            log(`🎯 Leitud ${targetOre} ruudul${targetRuut}! Korjan...`);
 
             try {
                 const res1 = await fetch(`/10xpickupmaavara.php?ruutnr=${targetRuut}&kaarttyyp=tavakaart`);
