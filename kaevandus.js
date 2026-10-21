@@ -87,7 +87,7 @@
 
         if (targetRuut !== null) {
             isProcessing = true;
-            log(`🎯 Leitud ${targetOre} ruudul${targetRuut}! Korjan...`);
+            log(`🎯 Leitud ${targetOre} ruudul ${targetRuut}! Korjan...`);
 
             try {
                 const res1 = await fetch(`/10xpickupmaavara.php?ruutnr=${targetRuut}&kaarttyyp=tavakaart`);
@@ -115,6 +115,22 @@
     }
 
     const currentUrl = window.location.href;
+
+    // --- RIIDEKAPI TURVAKONTROLL KAESOLEVA SKRIPTIOLEKU JAOKS ---
+    if (currentUrl.includes('asukoht=riided')) {
+        setTimeout(() => {
+            const missingTool = localStorage.getItem('sulane_missing_tool');
+            if (missingTool === 'kirka') {
+                const pageText = document.body.innerText.toLowerCase();
+                // Kui lehel on teade, et võtsid kasutusele või kirka on kasutusel, suuname otse kaevandusse
+                if (pageText.includes('võtsid kasutusele') || pageText.includes('kasutusel')) {
+                    localStorage.removeItem('sulane_missing_tool');
+                    window.location.href = 'https://www.sulane.net/avaleht.php?asukoht=10xkaevandus';
+                }
+            }
+        }, 2000);
+    }
+
     if (currentUrl.includes('asukoht=10xkaevandus')) {
         log('Kaevanduse skript initsialiseeritud.');
 
@@ -123,7 +139,7 @@
         }, 2000);
 
         setInterval(() => {
-            const isRunning = localStorage.getItem('sulane_running') === 'true';
+            const isRunning = localStorage.getItem('sulane_running'] === 'true';
             const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
             if (!isRunning || primarySkill !== 'kaevandus') return;
 
