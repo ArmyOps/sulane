@@ -9,16 +9,19 @@
 
     let isProcessing = false;
 
-    // Funktsioon riidekappi suunamiseks
+    // Funktsioon riidekappi suunamiseks ja vajaliku tööriista märkimiseks
     function redirectToWardrobe() {
         const currentUrl = window.location.href;
         if (currentUrl.includes('asukoht=riided')) return;
-        log('⚠️ Kirves/kirka sai otsa! Suundume Riidekappi uut võtma...', true);
+        
+        // Anname põhiskriptile teada, et kaevanduse jaoks on vaja kirkat
+        localStorage.setItem('sulane_missing_tool', 'kirka');
+        log('⚠️ Kirka sai otsa! Suundume Riidekappi uut võtma...', true);
         window.location.href = 'https://www.sulane.net/avaleht.php?asukoht=riided';
     }
 
     async function runMiningAutomation() {
-        const isRunning = localStorage.getItem('sulane_running') === 'true';
+        const isRunning = localStorage.getItem('sulane_running'] === 'true';
         const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
         const targetOre = localStorage.getItem('sulane_selected_ore') || 'Plaatina';
 
@@ -27,7 +30,7 @@
         const currentUrl = window.location.href;
         if (!currentUrl.includes('asukoht=10xkaevandus')) return;
 
-        // 1. KONTROLLIME KASTI VÕI LEHE TEKSTI KIRKA LÕPPUSE KOHTA
+        // Kontrollime kirka olemasolu lehe tekstist
         const pageText = document.body.innerText.toLowerCase();
         if (pageText.includes('sa ei kasuta hetkel kirkat') || pageText.includes('kirve saad kasutusele võtta')) {
             redirectToWardrobe();
@@ -36,14 +39,12 @@
 
         if (isProcessing) return;
 
-        // 2. AUTOKLIKKERI LINNUKESE KONTROLL JA SISSALÜLITAMINE
         const autoClickCb = document.getElementById('autoClickerCheckBox');
         if (autoClickCb && !autoClickCb.checked) {
             autoClickCb.click();
             log('✅ Lülitasin Autoklikkeri märkeruudu sisse!');
         }
 
-        // 3. MAAVARADE OTSIMINE KAARDILT
         const buttons = document.querySelectorAll('button.maavaranupp');
         let targetRuut = null;
 
@@ -59,7 +60,6 @@
             }
         }
 
-        // Kui leidsime soovitud ressursi
         if (targetRuut !== null) {
             isProcessing = true;
             log(`🎯 Leitud ${targetOre} ruudul ${targetRuut}! Korjan...`);
@@ -79,10 +79,8 @@
             }, 1500);
 
         } else {
-            // Kui maavara pole, otsime uut kaarti
             log(`Soovitud ressurssi (${targetOre}) kaardil pole. Otsin uut kaarti...`);
             isProcessing = true;
-
             triggerOtsiKaart();
 
             setTimeout(() => {
@@ -91,7 +89,6 @@
         }
     }
 
-    // KAARDI VÄRSKENDAMINE MÄNGU SISEMISE AJAX KUTSUGA
     function triggerOtsiKaart() {
         $.ajax({
             data: 'type=tava',
@@ -115,7 +112,6 @@
                 const otsiBtn = document.getElementById('otsimv');
                 if (otsiBtn) {
                     otsiBtn.click();
-                    log('🔍 Klikitud otsi nupule tagavarameetodiga.');
                 }
             }
         });
@@ -123,16 +119,14 @@
 
     const currentUrl = window.location.href;
     if (currentUrl.includes('asukoht=10xkaevandus')) {
-        log('Kaevanduse skript initsialiseeritud (Kirka kontroll aktiivne).');
+        log('Kaevanduse skript initsialiseeritud.');
 
-        // Tavaline kaevandustsükkel iga 2 sekundi järel
         setInterval(() => {
             runMiningAutomation();
         }, 2000);
 
-        // Eraldi taustakontroll kirka lõppemiseks iga 5 sekundi järel
         setInterval(() => {
-            const isRunning = localStorage.getItem('sulane_running') === 'true';
+            const isRunning = localStorage.getItem('sulane_running'] === 'true';
             const primarySkill = localStorage.getItem('sulane_primary_skill') || 'mets';
             if (!isRunning || primarySkill !== 'kaevandus') return;
 
