@@ -1,30 +1,17 @@
-// ==UserScript==
-// @name         Kaevandus Beta
-// @namespace    http://tampermonkey.net/
-// @description  Kaheetapilise korjamise ja värskendamise manuaalne test
-// @version      14.8
-// @match        *://sulane.net/*
-// @match        *://www.sulane.net/*
-// @grant        none
-// ==/UserScript==
-
 (function () {
     'use strict';
 
-    const currentUrl = window.location.href;
     const TARGET_ORE = 'Plaatina';
-
-    let isWorking = false;
     let isPaused = localStorage.getItem('mine_bot_paused') === 'true';
 
-    function createDebugOverlay() {
+    function createMiningOverlay() {
         if (document.getElementById('mine-debug-overlay')) return;
 
         const overlay = document.createElement('div');
         overlay.id = 'mine-debug-overlay';
         overlay.style.position = 'fixed';
         overlay.style.top = '10px';
-        overlay.style.right = '10px';
+        overlay.style.right = '280px'; // Nihutatud veidi vasakule, et ei kataks põhiskilli UI-d
         overlay.style.zIndex = '999999';
         overlay.style.background = 'rgba(0, 0, 0, 0.95)';
         overlay.style.color = '#00ff00';
@@ -74,7 +61,6 @@
             if (targetRuut !== null) {
                 logToOverlay(`1. Saadan korjamise päringu ruudule ${targetRuut}...`);
 
-                // 1. samm: Korjamine (10xpickupmaavara.php)
                 try {
                     const res1 = await fetch(`/10xpickupmaavara.php?ruutnr=${targetRuut}&kaarttyyp=tavakaart`);
                     logToOverlay(`-> Pickup vastuse kood: ${res1.status}`);
@@ -82,12 +68,10 @@
                     logToOverlay(`-> Pickup viga: ${e.message}`);
                 }
 
-                // Ootame pisikese hetke (300ms)
                 await new Promise(r => setTimeout(r, 300));
 
                 logToOverlay(`2. Saadan kaardi värskenduse (jalusrefreshnew.php)...`);
 
-                // 2. samm: Värskendamine (jalusrefreshnew.php)
                 try {
                     const res2 = await fetch('/jalusrefreshnew.php', {
                         method: 'POST',
@@ -98,7 +82,6 @@
                     const htmlText = await res2.text();
                     logToOverlay(`-> Refresh kood: ${res2.status} (pikkus: ${htmlText.length} baiti)`);
 
-                    // Kui lehel on mängu enda sisemine funktsioon kaardi uuesti joonistamiseks, käivitame selle
                     if (typeof window.jalusrefresh === 'function') {
                         window.jalusrefresh();
                         logToOverlay(`-> Kutsusin välja window.jalusrefresh()`);
@@ -129,7 +112,7 @@
     }
 
     function logToOverlay(msg) {
-        createDebugOverlay();
+        createMiningOverlay();
         const logBox = document.getElementById('bot-log-box');
         if (logBox) {
             const time = new Date().toLocaleTimeString();
@@ -139,8 +122,10 @@
         }
     }
 
-    window.addEventListener('DOMContentLoaded', createDebugOverlay);
-    window.addEventListener('load', createDebugOverlay);
-    setInterval(createDebugOverlay, 1000);
-
+    // Käivitame kaevanduse loogika, kui asume kaevanduse lehel ja põhiskript on aktiivne
+    const currentUrl = window.location.href;
+    if (currentUrl.includes('asukoht=kaevandus') && localStorage.getItem('sulane_running') === 'true') {
+        window.addEventListener('DOMContentLoaded', createMiningOverlay);
+        window.addEventListener('load', createMiningOverlay);
+    }
 })();
