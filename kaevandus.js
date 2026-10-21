@@ -7,17 +7,42 @@
         }
     }
 
-    let isProcessing = false; 
+    let isProcessing = false;
 
     // Funktsioon riidekappi suunamiseks ja vajaliku tööriista märkimiseks
     function redirectToWardrobe() {
         const currentUrl = window.location.href;
         if (currentUrl.includes('asukoht=riided')) return;
         
-        // Anname põhiskriptile teada, et kaevanduse jaoks on vaja kirkat
         localStorage.setItem('sulane_missing_tool', 'kirka');
         log('⚠️ Kirka sai otsa! Suundume Riidekappi uut võtma...', true);
         window.location.href = 'https://www.sulane.net/avaleht.php?asukoht=riided';
+    }
+
+    function triggerOtsiKaart() {
+        $.ajax({
+            data: 'type=tava',
+            url: '10xkaevanduskaartotsi852.php',
+            method: 'GET',
+            success: function () {
+                $.ajax({
+                    data: 'type=tava',
+                    url: '10xkaevanduskaart852.php',
+                    method: 'GET',
+                    success: function (mapRes) {
+                        const kaartSisu = document.getElementById('kaartsisu');
+                        if (kaartSisu) {
+                            kaartSisu.innerHTML = mapRes;
+                            log('✅ Kaart uuendatud uute ruutudega!');
+                        }
+                    }
+                });
+            },
+            error: function () {
+                const otsiBtn = document.getElementById('otsimv');
+                if (otsiBtn) otsiBtn.click();
+            }
+        });
     }
 
     async function runMiningAutomation() {
@@ -87,34 +112,6 @@
                 isProcessing = false;
             }, 1500);
         }
-    }
-
-    function triggerOtsiKaart() {
-        $.ajax({
-            data: 'type=tava',
-            url: '10xkaevanduskaartotsi852.php',
-            method: 'GET',
-            success: function () {
-                $.ajax({
-                    data: 'type=tava',
-                    url: '10xkaevanduskaart852.php',
-                    method: 'GET',
-                    success: function (mapRes) {
-                        const kaartSisu = document.getElementById('kaartsisu');
-                        if (kaartSisu) {
-                            kaartSisu.innerHTML = mapRes;
-                            log('✅ Kaart uuendatud uute ruutudega!');
-                        }
-                    }
-                });
-            },
-            error: function() {
-                const otsiBtn = document.getElementById('otsimv');
-                if (otsiBtn) {
-                    otsiBtn.click();
-                }
-            }
-        });
     }
 
     const currentUrl = window.location.href;
