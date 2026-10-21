@@ -19,20 +19,20 @@
         const currentUrl = window.location.href;
         if (!currentUrl.includes('asukoht=10xkaevandus')) return;
 
-        // 1. Kontrollime ja paneme autokliku / linnukese sisse, kui see on lehel olematu või tegemata
+        // 1. TÄPNE AUTOKLIKKERI MÄRKERUUDU SISSALÜLITAMINE
         const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
-        const autoClickCb = document.getElementById('autoClickChecker') ||
-            checkboxes.find(cb => {
-                const labelText = cb.parentElement?.textContent?.toLowerCase() || '';
-                return labelText.includes('autoklikk') || labelText.includes('auto') || cb.id.toLowerCase().includes('auto');
-            });
+        const autoClickCb = checkboxes.find(cb => {
+            const parentText = (cb.parentElement?.textContent || '').toLowerCase();
+            const labelText = (cb.nextSibling?.textContent || cb.previousSibling?.textContent || '').toLowerCase();
+            return parentText.includes('autoklikker') || labelText.includes('autoklikker') || parentText.includes('autoklikk');
+        });
 
         if (autoClickCb && !autoClickCb.checked) {
             autoClickCb.click();
-            log('Lülitasin kaevanduses autokliki checkboxi sisse.');
+            log('✅ Lülitasin Autoklikkeri märkeruudu sisse!');
         }
 
-        // 2. Otsime maavara nuppe
+        // 2. MAAVARA RESSURSI OTSIMINE JA VAJUTAMINE
         const buttons = document.querySelectorAll('button.maavaranupp, input.maavaranupp, [maavara]');
         let targetRuut = null;
 
@@ -48,72 +48,68 @@
             }
         }
 
+        // Kui leidsime kaardilt soovitud ressursi
         if (targetRuut !== null) {
             isProcessing = true;
-            log(`🎯 Leitud ${targetOre} ruudul ${targetRuut}! Saadan korjamise päringu...`);
+            log(`🎯 Leitud ressurss (${targetOre}) ruudul ${targetRuut}! Korjan...`);
 
             try {
                 const res1 = await fetch(`/10xpickupmaavara.php?ruutnr=${targetRuut}&kaarttyyp=tavakaart`);
-                log(`-> Pickup vastus: ${res1.status}`);
+                log(`-> Pickup vastuse kood: ${res1.status}`);
             } catch (e) {
                 log(`-> Pickup viga: ${e.message}`, true);
             }
 
-            // Ootame natuke ja teeme täieliku kaardi uuendamise / uue kaardi otsingu
-            await new Promise(r => setTimeout(r, 500));
-            await fetchAndRefreshMap();
+            await new Promise(r => setTimeout(r, 400));
+
+            // Pärast korjamist vajutame kindluse mõttes "Otsi" või värskendame kaarti
+            clickOtsiButton();
 
             setTimeout(() => {
                 isProcessing = false;
-            }, 2000);
+            }, 1800);
 
         } else {
-            // Kui soovitud maavara pole kaardil, otsime nuppu "Otsi uut kaarti" või uuendame kaarti
-            log(`Soovitud ressurssi (${targetOre}) ei leitud. Otsin uut kaarti...`);
-            await fetchAndRefreshMap();
+            // Kui kaardil pole soovitud maavara, klikime "Otsi" nuppu!
+            log(`Soovitud ressurssi (${targetOre}) kaardil pole. Klikin "Otsi" nuppu...`);
+            isProcessing = true;
+            
+            clickOtsiButton();
+
+            setTimeout(() => {
+                isProcessing = false;
+            }, 1500);
         }
     }
 
-    // Abifunktsioon uue kaardi fetchimiseks ja refreshimiseks
-    async function fetchAndRefreshMap() {
-        try {
-            // Otsime lehelt nuppu, mis võib vastutada uue kaardi otsimise eest (nt "Otsi", "Uus kaart" vms)
-            const actionButtons = Array.from(document.querySelectorAll('button, input[type="submit"], input[type="button"]'));
-            const otsiKaartiBtn = actionButtons.find(el => {
-                const txt = (el.value || el.textContent || '').toLowerCase();
-                return txt.includes('otsi') || txt.includes('kaart') || txt.includes('värskenda');
-            });
+    // TÄPNE "OTSI" NUPU LEIDMINE JA KLIKKIMINE
+    function clickOtsiButton() {
+        const allButtons = Array.from(document.querySelectorAll('button, input[type="submit"], input[type="button"]'));
+        
+        // Otsime nuppu, mille tekst või väärtus on täpselt "Otsi"
+        const otsiBtn = allButtons.find(el => {
+            const txt = (el.value || el.textContent || '').trim().toLowerCase();
+            return txt === 'otsi';
+        });
 
-            if (otsiKaartiBtn) {
-                log('Klikin lehel leitud kaardi otsimise/värskendamise nuppu.');
-                otsiKaartiBtn.click();
-            } else {
-                // Kui nuppu ei leia, teeme serveripoolse fetch refreshi
-                const res = await fetch('/jalusrefreshnew.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
-                log(`-> Kaardi refresh fetch kood: ${res.status}`);
-            }
-
-            // Kui mängul on sisemine refresh funktsioon, käivitame selle samuti
+        if (otsiBtn) {
+            log('🔍 Klikkisin nuppu "Otsi"!');
+            otsiBtn.click();
+        } else {
+            log('⚠️ Nuppu "Otsi" ei leitud lehelt!', true);
+            // Tagavaralahendus: kui nuppu ei leita, teeme fetch refreshi
             if (typeof window.jalusrefresh === 'function') {
                 window.jalusrefresh();
-            } else {
-                // Kui funktsiooni pole, teeme lehele kiire automaatse soft-reload'i või laseme skriptil jätkata
-                window.location.reload();
             }
-        } catch (e) {
-            log(`Kaardi uuendamise viga: ${e.message}`, true);
         }
     }
 
     const currentUrl = window.location.href;
     if (currentUrl.includes('asukoht=10xkaevandus')) {
-        log('Kaevanduse skript initsialiseeritud koos autokliki ja kaardi värskendusega.');
+        log('Kaevanduse skript laetud (Uuendatud "Otsi" nupu ja "Autoklikker" tuvastus).');
         
         setInterval(() => {
             runMiningAutomation();
-        }, 3000);
+        }, 2000);
     }
 })();
